@@ -21,36 +21,43 @@ jobs:
         include:
           - os: ubuntu-latest
             rid: linux-x64
+            target: x86_64-unknown-linux-gnu
             lib: libuser_permission_csharp.so
-          - os: ubuntu-24.04-arm    # GitHub-hosted arm64 Linux ランナー
+          - os: ubuntu-24.04-arm    # GitHub-hosted arm64 Linux ランナー (ネイティブ)
             rid: linux-arm64
+            target: aarch64-unknown-linux-gnu
             lib: libuser_permission_csharp.so
-          - os: macos-13            # Intel ネイティブ
+          - os: macos-14            # Apple Silicon。x86_64 はクロスコンパイル
             rid: osx-x64
+            target: x86_64-apple-darwin
             lib: libuser_permission_csharp.dylib
-          - os: macos-14            # Apple Silicon ネイティブ
+          - os: macos-14            # Apple Silicon (ネイティブ)
             rid: osx-arm64
+            target: aarch64-apple-darwin
             lib: libuser_permission_csharp.dylib
           - os: windows-latest
             rid: win-x64
+            target: x86_64-pc-windows-msvc
             lib: user_permission_csharp.dll
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
 
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
 
       - name: Build cdylib (release)
-        run: cargo build --release -p user-permission-csharp
+        run: cargo build --release -p user-permission-csharp --target ${{ matrix.target }}
 
       - name: Stage native library
         shell: bash
-        run: cp "target/release/${{ matrix.lib }}" "${{ matrix.lib }}"
+        run: cp "target/${{ matrix.target }}/release/${{ matrix.lib }}" "${{ matrix.lib }}"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: native-${{ matrix.rid }}
           path: ${{ matrix.lib }}
@@ -70,14 +77,14 @@ jobs:
       # GitHub Release を作るため
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
       - name: Download native artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           path: artifacts
           pattern: native-*
