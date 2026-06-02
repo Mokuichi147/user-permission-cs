@@ -15,7 +15,7 @@ Rust 実装本体は別リポジトリにあります: **[mokuichi147/user-permi
 
 ## クイックスタート (サーバーを試す)
 
-.NET 10 SDK があれば、インストール不要で `dnx`（`uvx` 相当のワンショット実行）から同梱サーバーを直接起動できます。
+.NET 10 SDK があれば、インストール不要で `dnx`（ワンショット実行）から同梱サーバーを直接起動できます。
 
 ```bash
 dnx UserPermission.Tool serve --webui
@@ -151,7 +151,7 @@ await Server.ServeAsync(host: "0.0.0.0", port: 8001, prefix: "/api", webui: true
 CLI からも起動できます（`UserPermission.Tool` パッケージ）。
 
 ```bash
-# .NET 10: インストール不要のワンショット実行（uvx 相当）
+# .NET 10: インストール不要のワンショット実行
 dnx UserPermission.Tool serve --host 0.0.0.0 --port 8001 --prefix /api --webui
 
 # もしくはグローバルツールとして
