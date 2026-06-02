@@ -8,7 +8,28 @@
 
 Rust 実装本体は別リポジトリにあります: **[mokuichi147/user-permission](https://github.com/mokuichi147/user-permission)**
 
-このリポジトリは Rust の C ABI (cdylib) を **P/Invoke** で呼び出す薄いラッパーのみを含み、NuGet パッケージ `UserPermission` をビルド・公開します。`async/await` でそのまま使える API を提供します。
+このリポジトリは Rust の C ABI (cdylib) を **P/Invoke** で呼び出す薄いラッパーのみを含み、`async/await` でそのまま使える API を提供します。2 つの NuGet パッケージを公開します。
+
+- **`UserPermission`** — ライブラリ本体
+- **`UserPermission.Tool`** — `serve` コマンドを持つ .NET ツール (dnx / `dotnet tool`)
+
+## クイックスタート (サーバーを試す)
+
+.NET 10 SDK があれば、インストール不要で `dnx`（`uvx` 相当のワンショット実行）から同梱サーバーを直接起動できます。
+
+```bash
+dnx UserPermission.Tool serve --webui
+```
+
+従来の SDK では、グローバルツールとしてインストールして使えます。
+
+```bash
+dotnet tool install -g UserPermission.Tool
+user-permission serve --webui
+```
+
+ブラウザで <http://127.0.0.1:8000/ui> を開くと Web 管理画面が利用できます。
+オプション一覧は [サーバー起動](#サーバー起動) を参照してください。
 
 ## インストール
 
@@ -120,7 +141,28 @@ await Server.ServeAsync(host: "0.0.0.0", port: 8001, prefix: "/api", webui: true
 | `webui` | `false` | Web管理画面を有効化 |
 | `webuiPrefix` | `/ui` | 管理画面のURLプレフィックス |
 
-> フル機能の CLI サーバーは Rust リポジトリ側にあります (`cargo install user-permission`)。
+CLI からも起動できます（`UserPermission.Tool` パッケージ）。
+
+```bash
+# .NET 10: インストール不要のワンショット実行（uvx 相当）
+dnx UserPermission.Tool serve --host 0.0.0.0 --port 8001 --prefix /api --webui
+
+# もしくはグローバルツールとして
+dotnet tool install -g UserPermission.Tool
+user-permission serve --host 0.0.0.0 --port 8001 --prefix /api --webui
+```
+
+| オプション | デフォルト | 説明 |
+|---|---|---|
+| `--host` | `127.0.0.1` | バインドアドレス |
+| `--port` | `8000` | バインドポート |
+| `--database` | `user_permission.db` | SQLiteデータベースのパス |
+| `--secret` | `secret.key` | シークレットキーファイルのパス |
+| `--prefix` | (なし) | APIルートプレフィックス（例: `/api`） |
+| `--webui` | 無効 | Web管理画面を有効化 |
+| `--webui-prefix` | `/ui` | 管理画面のURLプレフィックス |
+
+> ユーザー管理などフル機能の CLI サーバーは Rust リポジトリ側にあります (`cargo install user-permission`)。この .NET ツールは `serve` のみを提供します。
 
 ### リレー（中継）
 
@@ -255,7 +297,7 @@ dotnet test
 ## リリース
 
 `v` で始まる Git タグを push すると GitHub Actions が全プラットフォームのネイティブライブラリをビルドし、
-NuGet パッケージ (`UserPermission`) を生成して nuget.org に公開します（詳細は `.github/workflows/release.yml`）。
+NuGet パッケージ (`UserPermission` と `UserPermission.Tool`) を生成して nuget.org に公開します（詳細は `.github/workflows/release.yml`）。
 
 ## ライセンス
 

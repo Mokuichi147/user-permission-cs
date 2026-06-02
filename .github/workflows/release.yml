@@ -91,8 +91,12 @@ jobs:
           echo "--- packaged native libraries ---"
           find runtimes -type f
 
-      - name: Pack
+      - name: Pack library
         run: dotnet pack src/UserPermission/UserPermission.csproj -c Release -o dist
+
+      - name: Pack tool (dnx / dotnet tool)
+        # runtimes/ が存在するため、ツールパッケージに各 RID のネイティブライブラリが同梱される。
+        run: dotnet pack tool/UserPermission.Tool/UserPermission.Tool.csproj -c Release -o dist
 
       - name: List packages
         run: ls -la dist/

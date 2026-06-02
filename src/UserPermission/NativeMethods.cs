@@ -17,6 +17,13 @@ internal static class NativeMethods
         PropertyNameCaseInsensitive = true,
     };
 
+    // 最初の P/Invoke (= NativeMethods のメンバーアクセス) より前に一度だけ実行され、
+    // ネイティブライブラリ解決のフォールバックを登録する。
+    static NativeMethods()
+    {
+        NativeLibraryResolver.Initialize();
+    }
+
     // --- 文字列・エンベロープ補助 -------------------------------------------------
 
     /// <summary>ネイティブが返した UTF-8 文字列をマネージド文字列へ変換し、必ず解放する。</summary>
