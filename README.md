@@ -178,13 +178,13 @@ user-permission serve --host 0.0.0.0 --port 8001 --prefix /api --webui
 ```csharp
 using UserPermission;
 
-// ファイルパス → ローカル SQLite
-var local = new Database("app.db", secret: "secret.key");
+// 初期化は local / relay 共通。接続文字列だけを変える。
+await using var local = await Database.ConnectAsync("app.db", secret: "secret.key"); // ファイルパス → ローカル SQLite
+await using var relay = await Database.ConnectAsync("http://localhost:8001");         // URL → HTTP 中継
 
-// URL → リモートサーバーへ HTTP 中継
-await using var db = await Database.ConnectAsync("http://localhost:8001");
-string? token = await db.LoginAsync("alice", "password123");
-IReadOnlyList<User> users = await db.Users.ListAllAsync();
+// 以降の操作はどちらの backend でも同一
+string? token = await relay.LoginAsync("alice", "password123");
+IReadOnlyList<User> users = await relay.Users.ListAllAsync();
 ```
 
 `db.LoginAsync(...)` で取得したトークンは `Database` が内部に保持し、以降のリクエストの `Authorization: Bearer` に自動付与されます。
