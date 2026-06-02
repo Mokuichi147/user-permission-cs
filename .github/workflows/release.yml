@@ -63,6 +63,9 @@ jobs:
     name: Pack & Publish
     needs: native
     runs-on: ubuntu-latest
+    # NUGET_API_KEY は GitHub Environment "nuget" のシークレットとして設定されているため、
+    # environment を宣言してこのジョブから参照できるようにする。
+    environment: nuget
     permissions:
       # GitHub Release を作るため
       contents: write
