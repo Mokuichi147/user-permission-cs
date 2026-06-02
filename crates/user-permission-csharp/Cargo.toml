@@ -1,0 +1,25 @@
+[package]
+name = "user-permission-csharp"
+description = "C ABI (P/Invoke) bindings for user-permission (.NET package: UserPermission)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish = false
+
+[lib]
+# 生成物: libuser_permission_csharp.{dylib,so} / user_permission_csharp.dll
+name = "user_permission_csharp"
+crate-type = ["cdylib"]
+
+[dependencies]
+# Rust コアは crates.io から取得 (リポジトリ: mokuichi147/user-permission)
+user-permission-core = { workspace = true }
+user-permission = { workspace = true }
+tokio = { workspace = true }
+axum = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }

@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <RootNamespace>UserPermission</RootNamespace>
+    <AssemblyName>UserPermission</AssemblyName>
+  </PropertyGroup>
+
+  <!-- NuGet パッケージ メタデータ -->
+  <PropertyGroup>
+    <PackageId>UserPermission</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>mokuichi147</Authors>
+    <Description>ユーザー・グループ・権限を管理する非同期ライブラリ user-permission の .NET バインディング。Rust コア (SQLite / Argon2 / JWT / HTTP リレー) を P/Invoke でラップします。</Description>
+    <PackageTags>auth;users;permissions;sqlite;jwt;rust</PackageTags>
+    <PackageLicenseExpression>MIT OR Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/mokuichi147/user-permission-cs</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/mokuichi147/user-permission-cs</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <!-- ネイティブ資産は runtimes/ から個別に同梱するため、ビルド出力の lib/ には何も置かない -->
+    <IncludeBuildOutput>true</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>false</SuppressDependenciesWhenPacking>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" Condition="Exists('../../README.md')" />
+  </ItemGroup>
+
+  <!-- CI が runtimes/{rid}/native/ に配置したネイティブライブラリをパッケージへ取り込む。
+       NuGet は runtimes/{rid}/native/ 配下を RID 別ネイティブ資産として解決し、
+       参照側アプリの出力へ自動コピーする。 -->
+  <ItemGroup Condition="Exists('../../runtimes')">
+    <None Include="../../runtimes/**/*.*" Pack="true"
+          PackagePath="runtimes/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+</Project>

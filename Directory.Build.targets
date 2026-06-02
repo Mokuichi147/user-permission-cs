@@ -1,0 +1,27 @@
+<Project>
+
+  <!--
+    ローカル開発・テスト用: `cargo build` で生成したネイティブライブラリを
+    各 .NET プロジェクトの出力ディレクトリへコピーし、P/Invoke が解決できるようにする。
+    NuGet パッケージには関与しない (CI は runtimes/ 経由で同梱する)。
+  -->
+  <PropertyGroup>
+    <_UpNativeLibName Condition="$([MSBuild]::IsOSPlatform('Windows'))">user_permission_csharp.dll</_UpNativeLibName>
+    <_UpNativeLibName Condition="$([MSBuild]::IsOSPlatform('OSX'))">libuser_permission_csharp.dylib</_UpNativeLibName>
+    <_UpNativeLibName Condition="$([MSBuild]::IsOSPlatform('Linux'))">libuser_permission_csharp.so</_UpNativeLibName>
+
+    <_UpCargoProfile Condition="'$(Configuration)' == 'Release'">release</_UpCargoProfile>
+    <_UpCargoProfile Condition="'$(_UpCargoProfile)' == ''">debug</_UpCargoProfile>
+
+    <_UpNativeLibPath>$(MSBuildThisFileDirectory)target/$(_UpCargoProfile)/$(_UpNativeLibName)</_UpNativeLibPath>
+  </PropertyGroup>
+
+  <Target Name="CopyUserPermissionNative"
+          AfterTargets="Build"
+          Condition="Exists('$(_UpNativeLibPath)')">
+    <Copy SourceFiles="$(_UpNativeLibPath)"
+          DestinationFolder="$(OutDir)"
+          SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>

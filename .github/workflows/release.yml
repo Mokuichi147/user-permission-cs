@@ -1,0 +1,113 @@
+name: Release
+
+on:
+  # `v` で始まるタグを push すると起動 (例: `git tag v0.1.0 && git push --tags`)。
+  push:
+    tags: ['v*']
+  # 手動でも回せる (誤公開を避けるため publish は tags push に限定)。
+  workflow_dispatch:
+
+jobs:
+  # ----------------------------------------------------------------- #
+  # 各プラットフォーム向けネイティブライブラリ (cdylib) をネイティブランナーでビルド。
+  # TLS は rustls + ring 構成なので OpenSSL 等のシステム依存は不要。
+  # ----------------------------------------------------------------- #
+  native:
+    name: Native ${{ matrix.rid }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+            lib: libuser_permission_csharp.so
+          - os: ubuntu-24.04-arm    # GitHub-hosted arm64 Linux ランナー
+            rid: linux-arm64
+            lib: libuser_permission_csharp.so
+          - os: macos-13            # Intel ネイティブ
+            rid: osx-x64
+            lib: libuser_permission_csharp.dylib
+          - os: macos-14            # Apple Silicon ネイティブ
+            rid: osx-arm64
+            lib: libuser_permission_csharp.dylib
+          - os: windows-latest
+            rid: win-x64
+            lib: user_permission_csharp.dll
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build cdylib (release)
+        run: cargo build --release -p user-permission-csharp
+
+      - name: Stage native library
+        shell: bash
+        run: cp "target/release/${{ matrix.lib }}" "${{ matrix.lib }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.rid }}
+          path: ${{ matrix.lib }}
+          if-no-files-found: error
+
+  # ----------------------------------------------------------------- #
+  # ネイティブ成果物を runtimes/{rid}/native/ に集約し、NuGet パッケージを生成・公開。
+  # ----------------------------------------------------------------- #
+  pack:
+    name: Pack & Publish
+    needs: native
+    runs-on: ubuntu-latest
+    permissions:
+      # GitHub Release を作るため
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Download native artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: native-*
+
+      - name: Assemble runtimes/
+        shell: bash
+        run: |
+          set -euo pipefail
+          for d in artifacts/native-*; do
+            rid="${d#artifacts/native-}"
+            mkdir -p "runtimes/$rid/native"
+            cp "$d"/* "runtimes/$rid/native/"
+          done
+          echo "--- packaged native libraries ---"
+          find runtimes -type f
+
+      - name: Pack
+        run: dotnet pack src/UserPermission/UserPermission.csproj -c Release -o dist
+
+      - name: List packages
+        run: ls -la dist/
+
+      - name: Publish to NuGet
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: >
+          dotnet nuget push "dist/*.nupkg"
+          --api-key "${{ secrets.NUGET_API_KEY }}"
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
