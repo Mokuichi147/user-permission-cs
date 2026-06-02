@@ -21,7 +21,11 @@ internal static class NativeMethods
     // ネイティブライブラリ解決のフォールバックを登録する。
     static NativeMethods()
     {
+#if NET5_0_OR_GREATER
+        // netstandard2.0 には NativeLibrary / SetDllImportResolver が無いため、
+        // モダン .NET でのみ runtimes/{rid}/native の探索フォールバックを登録する。
         NativeLibraryResolver.Initialize();
+#endif
     }
 
     // --- 文字列・エンベロープ補助 -------------------------------------------------
@@ -33,12 +37,29 @@ internal static class NativeMethods
             throw new UserPermissionException(UserPermissionErrorKind.Other, "native call returned a null pointer");
         try
         {
-            return Marshal.PtrToStringUTF8(ptr) ?? string.Empty;
+            return DecodeUtf8(ptr);
         }
         finally
         {
             up_string_free(ptr);
         }
+    }
+
+    /// <summary>null 終端 UTF-8 ポインタをマネージド文字列へデコードする (全ターゲット対応)。</summary>
+    private static string DecodeUtf8(IntPtr ptr)
+    {
+#if NET5_0_OR_GREATER
+        return Marshal.PtrToStringUTF8(ptr) ?? string.Empty;
+#else
+        int length = 0;
+        while (Marshal.ReadByte(ptr, length) != 0)
+            length++;
+        if (length == 0)
+            return string.Empty;
+        var bytes = new byte[length];
+        Marshal.Copy(ptr, bytes, 0, length);
+        return System.Text.Encoding.UTF8.GetString(bytes);
+#endif
     }
 
     /// <summary>エンベロープを解析し、<c>ok</c> ペイロードの生 JSON を返す (null の場合は <c>null</c>)。<c>err</c> なら例外を送出。</summary>
@@ -105,8 +126,8 @@ internal static class NativeMethods
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_database_new(
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string target,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string? secret);
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string target,
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string? secret);
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern void up_database_free(IntPtr handle);
@@ -120,143 +141,143 @@ internal static class NativeMethods
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_database_login(
         IntPtr handle,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string username,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string password,
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string username,
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string password,
         ulong expiresSecs);
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_database_login_service(
         IntPtr handle,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string clientId,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string clientSecret,
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string clientId,
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string clientSecret,
         ulong expiresSecs);
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_database_verify_token_and_get_user(
         IntPtr handle,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string? token);
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string? token);
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_database_bootstrap_admin_if_needed(
         IntPtr handle,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string username,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string password,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string displayName);
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string username,
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string password,
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string displayName);
 
     // --- Users -------------------------------------------------------------------
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_users_create(
         IntPtr handle,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string username,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string password,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string displayName,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string? token);
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string username,
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string password,
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string displayName,
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string? token);
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_users_get_by_id(
-        IntPtr handle, long userId, [MarshalAs(UnmanagedType.LPUTF8Str)] string? token);
+        IntPtr handle, long userId, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string? token);
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_users_get_by_username(
-        IntPtr handle, [MarshalAs(UnmanagedType.LPUTF8Str)] string username,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string? token);
+        IntPtr handle, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string username,
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string? token);
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_users_list_all(
-        IntPtr handle, [MarshalAs(UnmanagedType.LPUTF8Str)] string? token);
+        IntPtr handle, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string? token);
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_users_update(
         IntPtr handle, long userId,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string? username,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string? password,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string? displayName,
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string? username,
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string? password,
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string? displayName,
         int isActive,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string? token);
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string? token);
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_users_delete(
-        IntPtr handle, long userId, [MarshalAs(UnmanagedType.LPUTF8Str)] string? token);
+        IntPtr handle, long userId, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string? token);
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_users_is_admin(
-        IntPtr handle, long userId, [MarshalAs(UnmanagedType.LPUTF8Str)] string? token);
+        IntPtr handle, long userId, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string? token);
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_users_set_admin(
-        IntPtr handle, long userId, byte isAdmin, [MarshalAs(UnmanagedType.LPUTF8Str)] string? token);
+        IntPtr handle, long userId, byte isAdmin, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string? token);
 
     // --- Groups ------------------------------------------------------------------
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_groups_create(
         IntPtr handle,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string name,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string description,
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string name,
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string description,
         byte isAdmin,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string? token);
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string? token);
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_groups_get_by_id(
-        IntPtr handle, long groupId, [MarshalAs(UnmanagedType.LPUTF8Str)] string? token);
+        IntPtr handle, long groupId, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string? token);
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_groups_get_by_name(
-        IntPtr handle, [MarshalAs(UnmanagedType.LPUTF8Str)] string name,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string? token);
+        IntPtr handle, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string name,
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string? token);
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_groups_list_all(
-        IntPtr handle, [MarshalAs(UnmanagedType.LPUTF8Str)] string? token);
+        IntPtr handle, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string? token);
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_groups_list_admin_groups(
-        IntPtr handle, [MarshalAs(UnmanagedType.LPUTF8Str)] string? token);
+        IntPtr handle, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string? token);
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_groups_update(
         IntPtr handle, long groupId,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string? name,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string? description,
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string? name,
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string? description,
         int isAdmin,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string? token);
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string? token);
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_groups_delete(
-        IntPtr handle, long groupId, [MarshalAs(UnmanagedType.LPUTF8Str)] string? token);
+        IntPtr handle, long groupId, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string? token);
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_groups_add_user(
-        IntPtr handle, long groupId, long userId, [MarshalAs(UnmanagedType.LPUTF8Str)] string? token);
+        IntPtr handle, long groupId, long userId, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string? token);
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_groups_remove_user(
-        IntPtr handle, long groupId, long userId, [MarshalAs(UnmanagedType.LPUTF8Str)] string? token);
+        IntPtr handle, long groupId, long userId, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string? token);
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_groups_get_members(
-        IntPtr handle, long groupId, [MarshalAs(UnmanagedType.LPUTF8Str)] string? token);
+        IntPtr handle, long groupId, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string? token);
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_groups_get_user_groups(
-        IntPtr handle, long userId, [MarshalAs(UnmanagedType.LPUTF8Str)] string? token);
+        IntPtr handle, long userId, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string? token);
 
     // --- ServiceClients ----------------------------------------------------------
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_service_clients_create(
         IntPtr handle,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string name,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string scopesJson,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string? expiresAt);
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string name,
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string scopesJson,
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string? expiresAt);
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_service_clients_list(IntPtr handle);
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_service_clients_get_by_client_id(
-        IntPtr handle, [MarshalAs(UnmanagedType.LPUTF8Str)] string clientId);
+        IntPtr handle, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string clientId);
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_service_clients_delete(IntPtr handle, long id);
@@ -266,17 +287,17 @@ internal static class NativeMethods
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_validate_scopes(
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string scopesJson);
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string scopesJson);
 
     // --- Server ------------------------------------------------------------------
 
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr up_serve(
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string database,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string secret,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string host,
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string database,
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string secret,
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string host,
         ushort port,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string prefix,
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string prefix,
         byte webui,
-        [MarshalAs(UnmanagedType.LPUTF8Str)] string webuiPrefix);
+        [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string webuiPrefix);
 }

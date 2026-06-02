@@ -45,6 +45,13 @@ dotnet add package UserPermission
 | macOS | Intel / Apple Silicon | `osx-x64` / `osx-arm64` |
 | Windows | x64 | `win-x64` |
 
+### 対応ターゲットフレームワーク
+
+`netstandard2.0` と `net8.0` のマルチターゲットです。
+
+- **.NET 8+ / .NET Core 3.1+ / .NET 5・6・7**: ネイティブライブラリは `runtimes/{rid}/native/` から自動解決されます（追加設定不要）。
+- **.NET Framework 4.6.1+ など (netstandard2.0 経由)**: 参照・コンパイルは可能ですが、`runtimes/` による RID 別ネイティブの自動配置をランタイムがサポートしないため、対象プラットフォームのネイティブライブラリ（例: `user_permission_csharp.dll`）を実行ファイルと同じディレクトリに手動配置するか PATH を通す必要があります。
+
 ## 使い方
 
 ### 初期化

@@ -1,3 +1,6 @@
+// NativeLibrary / SetDllImportResolver は .NET 5 以降でのみ利用可能。
+// netstandard2.0 では既定の P/Invoke 探索に委ねるため、このファイル全体を除外する。
+#if NET5_0_OR_GREATER
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -80,3 +83,4 @@ internal static class NativeLibraryResolver
             yield return rid;
     }
 }
+#endif

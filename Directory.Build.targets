@@ -16,9 +16,10 @@
     <_UpNativeLibPath>$(MSBuildThisFileDirectory)target/$(_UpCargoProfile)/$(_UpNativeLibName)</_UpNativeLibPath>
   </PropertyGroup>
 
+  <!-- '$(TargetFramework)' != '' で、マルチターゲットの外側ビルド ($(OutDir) が空) を除外する。 -->
   <Target Name="CopyUserPermissionNative"
           AfterTargets="Build"
-          Condition="Exists('$(_UpNativeLibPath)')">
+          Condition="'$(TargetFramework)' != '' and Exists('$(_UpNativeLibPath)')">
     <Copy SourceFiles="$(_UpNativeLibPath)"
           DestinationFolder="$(OutDir)"
           SkipUnchangedFiles="true" />
