@@ -1,6 +1,5 @@
 # user-permission-cs
 
-![NuGet License](https://img.shields.io/nuget/l/UserPermission?cacheSeconds=0)
 ![NuGet Version](https://img.shields.io/nuget/v/UserPermission?cacheSeconds=0)
 ![NuGet Downloads](https://img.shields.io/nuget/dt/UserPermission?cacheSeconds=0)
 
