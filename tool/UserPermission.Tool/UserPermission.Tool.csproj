@@ -15,7 +15,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>user-permission</ToolCommandName>
     <PackageId>UserPermission.Tool</PackageId>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Authors>mokuichi147</Authors>
     <Description>user-permission の .NET ツール。`serve` で同梱 HTTP サーバーを起動します。dnx / dotnet tool 対応。</Description>
     <PackageTags>auth;users;permissions;cli;dotnet-tool</PackageTags>

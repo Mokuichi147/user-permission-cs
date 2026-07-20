@@ -20,7 +20,7 @@
   <!-- NuGet パッケージ メタデータ -->
   <PropertyGroup>
     <PackageId>UserPermission</PackageId>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Authors>mokuichi147</Authors>
     <Description>ユーザー・グループ・権限を管理する非同期ライブラリ user-permission の .NET バインディング。Rust コア (SQLite / Argon2 / JWT / HTTP リレー) を P/Invoke でラップします。</Description>
     <PackageTags>auth;users;permissions;sqlite;jwt;rust</PackageTags>
