@@ -4,7 +4,7 @@ use std::os::raw::c_char;
 
 use user_permission_core::GroupUpdate;
 
-use crate::{db_of, err_to_cstr, opt_str, req_str, run_json, tri_bool, DbHandle};
+use crate::{db_of, err_to_cstr, opt_str, req_str, run_json, tri_bool, user_id_of, DbHandle};
 
 /// グループを作成する (`ok`: Group)。
 #[no_mangle]
@@ -135,11 +135,15 @@ pub unsafe extern "C" fn up_groups_delete(
 pub unsafe extern "C" fn up_groups_add_user(
     handle: *mut DbHandle,
     group_id: i64,
-    user_id: i64,
+    user_id: *const c_char,
     token: *const c_char,
 ) -> *mut c_char {
     let db = match db_of(handle) {
         Ok(d) => d,
+        Err(e) => return err_to_cstr(e),
+    };
+    let user_id = match user_id_of(user_id) {
+        Ok(id) => id,
         Err(e) => return err_to_cstr(e),
     };
     let token = opt_str(token);
@@ -155,11 +159,15 @@ pub unsafe extern "C" fn up_groups_add_user(
 pub unsafe extern "C" fn up_groups_remove_user(
     handle: *mut DbHandle,
     group_id: i64,
-    user_id: i64,
+    user_id: *const c_char,
     token: *const c_char,
 ) -> *mut c_char {
     let db = match db_of(handle) {
         Ok(d) => d,
+        Err(e) => return err_to_cstr(e),
+    };
+    let user_id = match user_id_of(user_id) {
+        Ok(id) => id,
         Err(e) => return err_to_cstr(e),
     };
     let token = opt_str(token);
@@ -193,11 +201,15 @@ pub unsafe extern "C" fn up_groups_get_members(
 #[no_mangle]
 pub unsafe extern "C" fn up_groups_get_user_groups(
     handle: *mut DbHandle,
-    user_id: i64,
+    user_id: *const c_char,
     token: *const c_char,
 ) -> *mut c_char {
     let db = match db_of(handle) {
         Ok(d) => d,
+        Err(e) => return err_to_cstr(e),
+    };
+    let user_id = match user_id_of(user_id) {
+        Ok(id) => id,
         Err(e) => return err_to_cstr(e),
     };
     let token = opt_str(token);

@@ -31,8 +31,8 @@ public class DatabaseTests
             await using var db = await Database.ConnectAsync(dbPath, secretPath);
 
             // --- ユーザー作成 / 取得 ---
-            User alice = await db.Users.CreateAsync("alice", "password123", "Alice");
-            Assert.True(alice.Id > 0);
+            User alice = await db.Users.CreateAsync("alice", "alice-secret-1", "Alice");
+            Assert.NotEqual(Guid.Empty, alice.Id);
             Assert.Equal("alice", alice.Username);
             Assert.Equal("Alice", alice.DisplayName);
             Assert.True(alice.IsActive);
@@ -41,15 +41,15 @@ public class DatabaseTests
             Assert.NotNull(fetched);
             Assert.Equal(alice.Id, fetched!.Id);
 
-            Assert.Null(await db.Users.GetByIdAsync(999_999));
+            Assert.Null(await db.Users.GetByIdAsync(Guid.NewGuid()));
 
             // 重複作成は Conflict
             UserPermissionException conflict = await Assert.ThrowsAsync<UserPermissionException>(
-                () => db.Users.CreateAsync("alice", "another"));
+                () => db.Users.CreateAsync("alice", "another-pass1"));
             Assert.Equal(UserPermissionErrorKind.Conflict, conflict.Kind);
 
             // --- 認証 / トークン ---
-            string? token = await db.LoginAsync("alice", "password123");
+            string? token = await db.LoginAsync("alice", "alice-secret-1");
             Assert.NotNull(token);
 
             User? resolved = await db.VerifyTokenAndGetUserAsync(token);
@@ -68,7 +68,7 @@ public class DatabaseTests
             Assert.True(adminGroups[0].IsAdmin);
 
             // 2 人目以降は管理者ではない。SetAdmin で昇格・降格できる。
-            User bob = await db.Users.CreateAsync("bob", "password456", "Bob");
+            User bob = await db.Users.CreateAsync("bob", "bob-secret-1", "Bob");
             Assert.False(await db.Users.IsAdminAsync(bob.Id));
             Assert.True(await db.Users.SetAdminAsync(bob.Id, true));
             Assert.True(await db.Users.IsAdminAsync(bob.Id));
