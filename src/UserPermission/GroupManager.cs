@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -76,19 +77,19 @@ public sealed class GroupManager
     }
 
     /// <summary>グループにユーザーを追加する。</summary>
-    public Task<bool> AddUserAsync(long groupId, long userId, string? token = null)
+    public Task<bool> AddUserAsync(long groupId, Guid userId, string? token = null)
     {
         var h = _db.Handle;
         return Task.Run(() => NativeMethods.DecodeBool(
-            NativeMethods.up_groups_add_user(h, groupId, userId, token)));
+            NativeMethods.up_groups_add_user(h, groupId, userId.ToString(), token)));
     }
 
     /// <summary>グループからユーザーを除外する。</summary>
-    public Task<bool> RemoveUserAsync(long groupId, long userId, string? token = null)
+    public Task<bool> RemoveUserAsync(long groupId, Guid userId, string? token = null)
     {
         var h = _db.Handle;
         return Task.Run(() => NativeMethods.DecodeBool(
-            NativeMethods.up_groups_remove_user(h, groupId, userId, token)));
+            NativeMethods.up_groups_remove_user(h, groupId, userId.ToString(), token)));
     }
 
     /// <summary>グループのメンバー一覧を取得する。</summary>
@@ -100,10 +101,10 @@ public sealed class GroupManager
     }
 
     /// <summary>ユーザーが所属するグループ一覧を取得する。</summary>
-    public Task<IReadOnlyList<Group>> GetUserGroupsAsync(long userId, string? token = null)
+    public Task<IReadOnlyList<Group>> GetUserGroupsAsync(Guid userId, string? token = null)
     {
         var h = _db.Handle;
         return Task.Run(() => (IReadOnlyList<Group>)NativeMethods.Decode<List<Group>>(
-            NativeMethods.up_groups_get_user_groups(h, userId, token)));
+            NativeMethods.up_groups_get_user_groups(h, userId.ToString(), token)));
     }
 }

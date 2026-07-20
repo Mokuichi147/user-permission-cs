@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
@@ -5,7 +6,7 @@ namespace UserPermission;
 
 /// <summary>ユーザーレコード。</summary>
 public sealed record User(
-    [property: JsonPropertyName("id")] long Id,
+    [property: JsonPropertyName("id")] Guid Id,
     [property: JsonPropertyName("username")] string Username,
     [property: JsonPropertyName("display_name")] string DisplayName,
     [property: JsonPropertyName("is_active")] bool IsActive,

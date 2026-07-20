@@ -4,7 +4,7 @@ use std::os::raw::c_char;
 
 use user_permission_core::UserUpdate;
 
-use crate::{db_of, err_to_cstr, opt_str, req_str, run_json, tri_bool, DbHandle};
+use crate::{db_of, err_to_cstr, opt_str, req_str, run_json, tri_bool, user_id_of, DbHandle};
 
 /// ユーザーを作成する (`ok`: User)。
 #[no_mangle]
@@ -30,15 +30,19 @@ pub unsafe extern "C" fn up_users_create(
     })
 }
 
-/// ID でユーザーを取得する (`ok`: User | null)。
+/// ID (UUID 文字列) でユーザーを取得する (`ok`: User | null)。
 #[no_mangle]
 pub unsafe extern "C" fn up_users_get_by_id(
     handle: *mut DbHandle,
-    user_id: i64,
+    user_id: *const c_char,
     token: *const c_char,
 ) -> *mut c_char {
     let db = match db_of(handle) {
         Ok(d) => d,
+        Err(e) => return err_to_cstr(e),
+    };
+    let user_id = match user_id_of(user_id) {
+        Ok(id) => id,
         Err(e) => return err_to_cstr(e),
     };
     let token = opt_str(token);
@@ -83,7 +87,7 @@ pub unsafe extern "C" fn up_users_list_all(
 #[no_mangle]
 pub unsafe extern "C" fn up_users_update(
     handle: *mut DbHandle,
-    user_id: i64,
+    user_id: *const c_char,
     username: *const c_char,
     password: *const c_char,
     display_name: *const c_char,
@@ -92,6 +96,10 @@ pub unsafe extern "C" fn up_users_update(
 ) -> *mut c_char {
     let db = match db_of(handle) {
         Ok(d) => d,
+        Err(e) => return err_to_cstr(e),
+    };
+    let user_id = match user_id_of(user_id) {
+        Ok(id) => id,
         Err(e) => return err_to_cstr(e),
     };
     let update = UserUpdate {
@@ -112,26 +120,53 @@ pub unsafe extern "C" fn up_users_update(
 #[no_mangle]
 pub unsafe extern "C" fn up_users_delete(
     handle: *mut DbHandle,
-    user_id: i64,
+    user_id: *const c_char,
     token: *const c_char,
 ) -> *mut c_char {
     let db = match db_of(handle) {
         Ok(d) => d,
         Err(e) => return err_to_cstr(e),
     };
+    let user_id = match user_id_of(user_id) {
+        Ok(id) => id,
+        Err(e) => return err_to_cstr(e),
+    };
     let token = opt_str(token);
     run_json(async move { db.users().delete(user_id, token.as_deref()).await })
+}
+
+/// ユーザーに発行済みの全トークンを失効させる (`ok`: bool)。
+#[no_mangle]
+pub unsafe extern "C" fn up_users_revoke_tokens(
+    handle: *mut DbHandle,
+    user_id: *const c_char,
+    token: *const c_char,
+) -> *mut c_char {
+    let db = match db_of(handle) {
+        Ok(d) => d,
+        Err(e) => return err_to_cstr(e),
+    };
+    let user_id = match user_id_of(user_id) {
+        Ok(id) => id,
+        Err(e) => return err_to_cstr(e),
+    };
+    let token = opt_str(token);
+    run_json(async move { db.users().revoke_tokens(user_id, token.as_deref()).await })
 }
 
 /// ユーザーが管理者か判定する (`ok`: bool)。
 #[no_mangle]
 pub unsafe extern "C" fn up_users_is_admin(
     handle: *mut DbHandle,
-    user_id: i64,
+    user_id: *const c_char,
     token: *const c_char,
 ) -> *mut c_char {
     let db = match db_of(handle) {
         Ok(d) => d,
+        Err(e) => return err_to_cstr(e),
+    };
+    let user_id = match user_id_of(user_id) {
+        Ok(id) => id,
         Err(e) => return err_to_cstr(e),
     };
     let token = opt_str(token);
@@ -142,12 +177,16 @@ pub unsafe extern "C" fn up_users_is_admin(
 #[no_mangle]
 pub unsafe extern "C" fn up_users_set_admin(
     handle: *mut DbHandle,
-    user_id: i64,
+    user_id: *const c_char,
     is_admin: u8,
     token: *const c_char,
 ) -> *mut c_char {
     let db = match db_of(handle) {
         Ok(d) => d,
+        Err(e) => return err_to_cstr(e),
+    };
+    let user_id = match user_id_of(user_id) {
+        Ok(id) => id,
         Err(e) => return err_to_cstr(e),
     };
     let token = opt_str(token);

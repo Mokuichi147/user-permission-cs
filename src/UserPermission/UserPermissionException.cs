@@ -32,8 +32,12 @@ public enum UserPermissionErrorKind
     Url,
     /// <summary>リレーサーバーがエラーステータスを返した。</summary>
     Relay,
+    /// <summary>リレー先サーバーの server_id が pin した値と一致しない。</summary>
+    RelayServerMismatch,
     /// <summary>引数が不正 (未知のスコープ・誤った URL スキームなど)。</summary>
     InvalidArgument,
+    /// <summary>パスワードが強度ポリシーを満たさない。</summary>
+    WeakPassword,
     /// <summary>上記いずれにも分類されないエラー (FFI 層の異常を含む)。</summary>
     Other,
 }
@@ -71,7 +75,9 @@ public sealed class UserPermissionException : Exception
             "Io" => UserPermissionErrorKind.Io,
             "Url" => UserPermissionErrorKind.Url,
             "Relay" => UserPermissionErrorKind.Relay,
+            "RelayServerMismatch" => UserPermissionErrorKind.RelayServerMismatch,
             "InvalidArgument" => UserPermissionErrorKind.InvalidArgument,
+            "WeakPassword" => UserPermissionErrorKind.WeakPassword,
             _ => UserPermissionErrorKind.Other,
         };
 

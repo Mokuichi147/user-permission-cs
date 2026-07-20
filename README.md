@@ -61,7 +61,7 @@ using UserPermission;
 // 初回実行時にシークレットキーを自動生成（以降はファイルから読み込み）
 await using var db = await Database.ConnectAsync("app.db", secret: "secret.key");
 
-User user = await db.Users.CreateAsync("alice", "password123");
+User user = await db.Users.CreateAsync("alice", "alice-secret-1");
 Group group = await db.Groups.CreateAsync("admins");
 ```
 
@@ -79,22 +79,28 @@ await db.DisposeAsync();   // または using/await using で自動解放
 ### ユーザー管理
 
 ```csharp
-User user = await db.Users.CreateAsync("alice", "password123", displayName: "Alice");
-User? byId = await db.Users.GetByIdAsync(1);
+User user = await db.Users.CreateAsync("alice", "alice-secret-1", displayName: "Alice");
+User? byId = await db.Users.GetByIdAsync(user.Id);
 User? byName = await db.Users.GetByUsernameAsync("alice");
 IReadOnlyList<User> users = await db.Users.ListAllAsync();
 
-await db.Users.UpdateAsync(user.Id, password: "new_password");
+await db.Users.UpdateAsync(user.Id, password: "new-secret-1");
 await db.Users.UpdateAsync(user.Id, displayName: "Alice Smith");
 await db.Users.UpdateAsync(user.Id, isActive: false);
 await db.Users.DeleteAsync(user.Id);
+
+// パスワード変更・無効化は発行済みトークンを自動失効させる。明示的に失効させたい場合:
+await db.Users.RevokeTokensAsync(user.Id);
 ```
+
+> `User.Id` は UUID (`Guid`) です。パスワードは 8 文字以上かつありがちな文字列でないことが必要です
+> (`UserPermissionErrorKind.WeakPassword` で拒否されます)。
 
 ### 認証・トークン
 
 ```csharp
-string? token = await db.LoginAsync("alice", "password123");
-string? token2 = await db.LoginAsync("alice", "password123", expires: TimeSpan.FromHours(24));
+string? token = await db.LoginAsync("alice", "alice-secret-1");
+string? token2 = await db.LoginAsync("alice", "alice-secret-1", expires: TimeSpan.FromHours(24));
 
 // トークンを検証してユーザーを解決（無効・期限切れは null）
 User? resolved = await db.VerifyTokenAndGetUserAsync(token);

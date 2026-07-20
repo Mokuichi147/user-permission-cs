@@ -38,6 +38,7 @@ pub unsafe extern "C" fn up_serve(
             webui_enabled: webui != 0,
             token_expires: Duration::from_secs(3600),
             webui_token_expires: Duration::from_secs(86_400),
+            ..WebConfig::default()
         };
         let app = build_app(db, config);
         let addr = format!("{host}:{port}");
